@@ -6,10 +6,7 @@ import com.martinesco.br.kafka.example.domain.entities.Order;
 import com.martinesco.br.kafka.example.domain.exceptions.BusinessException;
 import com.martinesco.br.kafka.example.domain.repositories.ItemRepository;
 import com.martinesco.br.kafka.example.domain.repositories.OrderRepository;
-import com.martinesco.br.kafka.example.dtos.OrderDto;
-import com.martinesco.br.kafka.example.dtos.ResponseItemDto;
-import com.martinesco.br.kafka.example.dtos.ResponseItemOrderDto;
-import com.martinesco.br.kafka.example.dtos.ResponseOrderDto;
+import com.martinesco.br.kafka.example.dtos.*;
 import jakarta.persistence.EntityNotFoundException;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,14 +16,20 @@ import java.util.List;
 
 @Service
 public class OrderService {
-    @Autowired
-    private OrderRepository orderRepository;
+    private final OrderRepository orderRepository;
 
-    @Autowired
-    private ModelMapper modelMapper;
+    private final ModelMapper modelMapper;
 
-    @Autowired
-    private ItemRepository itemRepository;
+    private final ItemRepository itemRepository;
+
+    private final NotificationService notificationService;
+
+    public OrderService(ModelMapper modelMapper, ItemRepository itemRepository, NotificationService notificationService, OrderRepository orderRepository) {
+        this.modelMapper = modelMapper;
+        this.itemRepository = itemRepository;
+        this.notificationService = notificationService;
+        this.orderRepository = orderRepository;
+    }
 
 
     public void saveOrder(OrderDto orderDto) {
@@ -53,6 +56,13 @@ public class OrderService {
         order.setEmail(orderDto.getEmail());
         order.setPhone(orderDto.getPhone());
         orderRepository.save(order);
+
+        notificationService.sendEmail(
+                new EmailDTO(
+                        order.getEmail(),
+                        "Order Confirmation",
+                        "Your order has been placed successfully"
+                ));
     }
 
     public ResponseOrderDto getOrder(Long id) {
